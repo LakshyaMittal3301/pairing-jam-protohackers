@@ -51,6 +51,9 @@ func getMeanBetween(mintime, maxtime int32, prices []TimestampedPrice)  int32 {
 			count++
 		}
 	}
+	if count == 0 {
+		return 0
+	}
 	return totalSum / count
 }
 
