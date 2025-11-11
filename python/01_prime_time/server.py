@@ -47,6 +47,7 @@ def main():
 
 def handle_client(client_socket, client_address):
     """Handle a single client connection."""
+    the_rest = ""
     try:
         with client_socket:
             while True:
@@ -62,26 +63,36 @@ def handle_client(client_socket, client_address):
                     f"Received from {client_address}: {data[:100]}"
                 )  # Print first 100 bytes
 
-                # Echo the data back to the client
-                try:
-                    json_object = json.loads(data.decode("utf-8"))
-                    if is_invalid(json_object):
-                        client_socket.sendall(b"malformed\n")
-                    else:
-                        if is_prime(json_object["number"]):
-                            return_obj = {"method": "isPrime", "prime": True}
-                        else:
-                            return_obj = {"method": "isPrime", "prime": False}
+                request_string = data.decode("utf-8")
+                request_string = the_rest + request_string
 
-                        return_data = (json.dumps(return_obj) + "\n").encode("utf-8")
+                request_items = request_string.split("\n")
+                for each_request in request_items[:-1]:
+                    handle_request(each_request, client_socket)
 
-                        client_socket.sendall(return_data)
-                except:
-                    client_socket.sendall(data)
+                the_rest = request_items[-1]
 
     #
     except Exception as e:
         print(f"Error handling client {client_address}: {e}")
+
+
+def handle_request(request_string, client_socket):
+    try:
+        json_object = json.loads(request_string)
+        if is_invalid(json_object):
+            client_socket.sendall(b"malformed\n")
+        else:
+            if is_prime(json_object["number"]):
+                return_obj = {"method": "isPrime", "prime": True}
+            else:
+                return_obj = {"method": "isPrime", "prime": False}
+
+            return_data = (json.dumps(return_obj) + "\n").encode("utf-8")
+
+            client_socket.sendall(return_data)
+    except:
+        client_socket.sendall((request_string + "\n").encode("utf-8"))
 
 
 def is_invalid(request):
