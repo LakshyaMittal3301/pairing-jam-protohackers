@@ -58,9 +58,9 @@ def handle_client(client_socket, client_address):
                 if not data:
                     print(f"Client {client_address} disconnected")
                     break
-
+                print("----------------------------------")
                 print(
-                    f"Received from {client_address}: {data[:100]}"
+                    f"Received from {client_address}: {data}"
                 )  # Print first 100 bytes
 
                 request_string = data.decode("utf-8")
@@ -80,8 +80,9 @@ def handle_client(client_socket, client_address):
 def handle_request(request_string, client_socket):
     try:
         json_object = json.loads(request_string)
+        print("JSON", json_object)
         if is_invalid(json_object):
-            client_socket.sendall(b"malformed\n")
+            response = b"malformed\n"
         else:
             if is_prime(json_object["number"]):
                 return_obj = {"method": "isPrime", "prime": True}
@@ -90,9 +91,12 @@ def handle_request(request_string, client_socket):
 
             return_data = (json.dumps(return_obj) + "\n").encode("utf-8")
 
-            client_socket.sendall(return_data)
+            response = return_data
     except:
-        client_socket.sendall((request_string + "\n").encode("utf-8"))
+        response = (request_string + "\n").encode("utf-8")
+
+    print("RESPONSE", response)
+    client_socket.sendall(response)
 
 
 def is_invalid(request):
