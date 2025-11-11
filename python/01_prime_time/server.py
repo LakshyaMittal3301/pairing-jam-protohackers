@@ -65,6 +65,7 @@ def handle_client(client_socket, client_address):
                 # Echo the data back to the client
                 json_object = json.loads(data.decode("utf-8"))
                 print(json_object)
+                print(json_object["method"], json_object["number"])
     # client_socket.sendall(data)
     except Exception as e:
         print(f"Error handling client {client_address}: {e}")
