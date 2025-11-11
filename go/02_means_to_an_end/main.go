@@ -43,18 +43,18 @@ func parseBuffer(buffer []byte) (int32, int32, error) {
 }
 
 func getMeanBetween(mintime, maxtime int32, prices []TimestampedPrice)  int32 {
-	var count int32
-	var totalSum int32
+	var count int64
+	var totalSum int64
 	for _, price := range prices {
 		if mintime <= price.Timestamp && price.Timestamp <= maxtime {
-			totalSum += price.Price
+			totalSum += int64(price.Price)
 			count++
 		}
 	}
 	if count == 0 {
 		return 0
 	}
-	return totalSum / count
+	return int32(totalSum / count)
 }
 
 func handleConnection(conn net.Conn) {
