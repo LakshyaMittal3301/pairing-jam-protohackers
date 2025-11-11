@@ -63,12 +63,58 @@ def handle_client(client_socket, client_address):
                 )  # Print first 100 bytes
 
                 # Echo the data back to the client
-                json_object = json.loads(data.decode("utf-8"))
+                try:
+                    json_object = json.loads(data.decode("utf-8"))
+                    if is_invalid(json_object):
+                        client_socket.sendall(b"malformed")
+                    else:
+                        if is_prime(json_object["number"]):
+                            return_obj = {"method": "isPrime", "prime": True}
+                        else:
+                            return_obj = {"method": "isPrime", "prime": False}
+
+                        return_data = json.dumps(return_obj).encode("utf-8")
+
+                        client_socket.sendall(return_data)
+                except:
+                    client_socket.sendall(data)
+
                 print(json_object)
                 print(json_object["method"], json_object["number"])
-    # client_socket.sendall(data)
+                print(return_obj)
+                print(return_data)
+    #
     except Exception as e:
         print(f"Error handling client {client_address}: {e}")
+
+
+def is_invalid(request):
+    if "method" not in request:
+        return True
+    if request["method"] != "isPrime":
+        return True
+    if "number" not in request:
+        return True
+    if not isinstance(request["number"], (int, float)):
+        return True
+
+
+def is_prime(n):
+    if not isinstance(n, int):
+        return False
+    if n <= 1:
+        return False
+    if n <= 3:
+        return True
+    if n % 2 == 0 or n % 3 == 0:
+        return False
+
+    i = 5
+    while i * i <= n:
+        if n % i == 0 or n % (i + 2) == 0:
+            return False
+        i += 6
+    return True
 
 
 if __name__ == "__main__":
