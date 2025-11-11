@@ -41,7 +41,7 @@ func buildResponse(msgStr string) (string, error) {
 		return MALFORMED, err
 	}
 	prime := isPrime(msg.Number)
-	return fmt.Sprintf("{\"method\": \"isPrime\",\"prime\":\"%v\"}", prime), nil
+	return fmt.Sprintf("{\"method\": \"isPrime\",\"prime\": %v}", prime), nil
 }
 
 func parseMessage(str string) (IncomingMsg, error) {
