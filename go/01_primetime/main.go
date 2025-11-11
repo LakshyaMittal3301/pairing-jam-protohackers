@@ -54,6 +54,12 @@ func parseMessage(str string) (IncomingMsg, error) {
 	return msg, nil
 }
 
+func writeResponse(conn net.Conn, resp string) {
+	fmt.Printf("REPLY: %s\n", resp)
+	conn.Write([]byte(resp))
+	conn.Write([]byte{'\n'})
+}
+
 func handleConnection(conn net.Conn) {
 	defer conn.Close()
 
@@ -65,8 +71,7 @@ func handleConnection(conn net.Conn) {
 		if err == io.EOF {
 			fmt.Printf("Got EOF!\n")
 			if len(str) != 0 {
-				fmt.Printf("REPLY: %s\n", MALFORMED)
-				conn.Write([]byte(MALFORMED))
+				writeResponse(conn, MALFORMED)
 			}
 			break
 		}
@@ -77,8 +82,7 @@ func handleConnection(conn net.Conn) {
 		}
 
 		response, err := buildResponse(str)
-		fmt.Printf("REPLY: %s\n", response)
-		conn.Write([]byte(response))
+		writeResponse(conn, response)
 		if err != nil {
 			break
 		}
