@@ -12,8 +12,8 @@ import (
 const MALFORMED = "malformed"
 
 type IncomingMsg struct {
-	Method string  `json:"method"`
-	Number float64 `json:"number"`
+	Method *string  `json:"method"`
+	Number *float64 `json:"number"`
 }
 
 func isPrime(n float64) bool {
@@ -40,14 +40,15 @@ func buildResponse(msgStr string) (string, error) {
 	if err != nil {
 		return MALFORMED, err
 	}
-	prime := isPrime(msg.Number)
+
+	prime := isPrime(*msg.Number)
 	return fmt.Sprintf("{\"method\": \"isPrime\",\"prime\": %v}", prime), nil
 }
 
 func parseMessage(str string) (IncomingMsg, error) {
 	var msg IncomingMsg
 	err := json.Unmarshal([]byte(str), &msg)
-	if err != nil || msg.Method != "isPrime" {
+	if err != nil || msg.Method == nil || msg.Number == nil || *msg.Method != "isPrime" {
 		return IncomingMsg{}, fmt.Errorf("message parse error: %w", err)
 	}
 
