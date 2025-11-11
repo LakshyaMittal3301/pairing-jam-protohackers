@@ -66,23 +66,19 @@ def handle_client(client_socket, client_address):
                 try:
                     json_object = json.loads(data.decode("utf-8"))
                     if is_invalid(json_object):
-                        client_socket.sendall(b"malformed")
+                        client_socket.sendall(b"malformed\n")
                     else:
                         if is_prime(json_object["number"]):
                             return_obj = {"method": "isPrime", "prime": True}
                         else:
                             return_obj = {"method": "isPrime", "prime": False}
 
-                        return_data = json.dumps(return_obj).encode("utf-8")
+                        return_data = (json.dumps(return_obj) + "\n").encode("utf-8")
 
                         client_socket.sendall(return_data)
                 except:
                     client_socket.sendall(data)
 
-                print(json_object)
-                print(json_object["method"], json_object["number"])
-                print(return_obj)
-                print(return_data)
     #
     except Exception as e:
         print(f"Error handling client {client_address}: {e}")
