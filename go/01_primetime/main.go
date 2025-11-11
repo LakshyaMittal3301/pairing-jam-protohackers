@@ -63,6 +63,7 @@ func handleConnection(conn net.Conn) {
 		str, err := reader.ReadString('\n')
 		fmt.Printf("READ: %s\n", str)
 		if err == io.EOF {
+			fmt.Printf("Got EOF!\n")
 			if len(str) != 0 {
 				fmt.Printf("REPLY: %s\n", MALFORMED)
 				conn.Write([]byte(MALFORMED))
