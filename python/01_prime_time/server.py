@@ -106,7 +106,10 @@ def is_invalid(request):
         return True
     if "number" not in request:
         return True
-    if not isinstance(request["number"], (int, float)):
+    if not (
+        isinstance(request["number"], (int, float))
+        and not isinstance(request["number"], bool)
+    ):
         return True
 
 
