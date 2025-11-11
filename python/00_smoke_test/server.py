@@ -2,10 +2,12 @@
 """
 Simple TCP Echo Server
 Listens for client connections and echoes back any data received.
+Handles multiple clients concurrently using threading.
 """
 
 import socket
 import sys
+import threading
 
 HOST = '0.0.0.0'  # Listen on all available interfaces
 PORT = 8080       # Port to listen on
@@ -19,8 +21,8 @@ def main():
         # Bind to the address and port
         server_socket.bind((HOST, PORT))
 
-        # Start listening for connections (backlog of 5)
-        server_socket.listen(5)
+        # Start listening for connections (backlog of 128)
+        server_socket.listen(128)
         print(f"TCP Server listening on {HOST}:{PORT}")
 
         try:
@@ -29,8 +31,13 @@ def main():
                 client_socket, client_address = server_socket.accept()
                 print(f"Connection from {client_address}")
 
-                # Handle the client in the same thread (simple version)
-                handle_client(client_socket, client_address)
+                # Handle the client in a separate thread for concurrent serving
+                client_thread = threading.Thread(
+                    target=handle_client,
+                    args=(client_socket, client_address),
+                    daemon=True
+                )
+                client_thread.start()
         except KeyboardInterrupt:
             print("\nShutting down server...")
             sys.exit(0)
