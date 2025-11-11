@@ -35,13 +35,13 @@ func isPrime(n float64) bool {
 	return true
 }
 
-func buildResponse(msgStr string) string {
+func buildResponse(msgStr string) (string, error) {
 	msg, err := parseMessage(msgStr)
 	if err != nil {
-		return MALFORMED
+		return MALFORMED, err
 	}
 	prime := isPrime(msg.Number)
-	return fmt.Sprintf("{\"method\": \"isPrime\",\"prime\":\"%v\"}", prime)
+	return fmt.Sprintf("{\"method\": \"isPrime\",\"prime\":\"%v\"}", prime), nil
 }
 
 func parseMessage(str string) (IncomingMsg, error) {
@@ -75,9 +75,12 @@ func handleConnection(conn net.Conn) {
 			break
 		}
 
-		fmt.Printf("REPLY: %s\n", MALFORMED)
-		response := buildResponse(str)
+		response, err := buildResponse(str)
+		fmt.Printf("REPLY: %s\n", response)
 		conn.Write([]byte(response))
+		if err != nil {
+			break
+		}
 	}
 }
 
