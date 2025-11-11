@@ -15,6 +15,9 @@ func handleConnection(conn net.Conn) {
         return
     }
 
+	fmt.Printf("Data recieved: %v\n", data)
+	fmt.Printf("Writing back to conn\n")
+
 	n, err := conn.Write(data)
     if err != nil {
 		fmt.Errorf("Error writing: %v, err: %w",data, err)
