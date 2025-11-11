@@ -61,24 +61,23 @@ func handleConnection(conn net.Conn) {
 
 	for {
 		str, err := reader.ReadString('\n')
+		fmt.Printf("READ: %s\n", str)
 		if err == io.EOF {
 			if len(str) != 0 {
+				fmt.Printf("REPLY: %s\n", MALFORMED)
 				conn.Write([]byte(MALFORMED))
 			}
 			break
 		}
-
 		if err != nil {
-			fmt.Printf("Error reading message: %s", err.Error())
-			fmt.Printf("ABORTING SESSION")
+			fmt.Printf("Error reading message: %s\n", err.Error())
+			fmt.Printf("ABORTING SESSION\n")
 			break
-		} else {
-			fmt.Printf("READ: %s\n", str)
-
-			response := buildResponse(str)
-			fmt.Printf("REPLY: %s\n", response)
-			conn.Write([]byte(response))
 		}
+
+		fmt.Printf("REPLY: %s\n", MALFORMED)
+		response := buildResponse(str)
+		conn.Write([]byte(response))
 	}
 }
 
