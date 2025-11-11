@@ -83,6 +83,8 @@ func handleConnection(conn net.Conn) {
 			break
 		}
 	}
+
+	fmt.Printf("Ending session!\n")
 }
 
 func main() {
