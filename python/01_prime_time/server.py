@@ -5,12 +5,14 @@ Listens for client connections and echoes back any data received.
 Handles multiple clients concurrently using threading.
 """
 
+import json
 import socket
 import sys
 import threading
 
-HOST = '0.0.0.0'  # Listen on all available interfaces
-PORT = 8080       # Port to listen on
+HOST = "0.0.0.0"  # Listen on all available interfaces
+PORT = 8080  # Port to listen on
+
 
 def main():
     # Create a TCP socket
@@ -35,12 +37,13 @@ def main():
                 client_thread = threading.Thread(
                     target=handle_client,
                     args=(client_socket, client_address),
-                    daemon=True
+                    daemon=True,
                 )
                 client_thread.start()
         except KeyboardInterrupt:
             print("\nShutting down server...")
             sys.exit(0)
+
 
 def handle_client(client_socket, client_address):
     """Handle a single client connection."""
@@ -55,12 +58,17 @@ def handle_client(client_socket, client_address):
                     print(f"Client {client_address} disconnected")
                     break
 
-                print(f"Received from {client_address}: {data[:100]}")  # Print first 100 bytes
+                print(
+                    f"Received from {client_address}: {data[:100]}"
+                )  # Print first 100 bytes
 
                 # Echo the data back to the client
-                client_socket.sendall(data)
+                json_object = json.loads(data.decode("utf-8"))
+                print(json_object)
+    # client_socket.sendall(data)
     except Exception as e:
         print(f"Error handling client {client_address}: {e}")
+
 
 if __name__ == "__main__":
     main()
