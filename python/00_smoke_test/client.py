@@ -6,8 +6,8 @@ Connects to the echo server and sends/receives data programmatically.
 
 import socket
 
-HOST = 'localhost'  # Server hostname or IP address
-PORT = 8080         # Server port
+HOST = "95.216.146.135"  # Server hostname or IP address
+PORT = 8080  # Server port
 
 
 class EchoClient:
@@ -32,7 +32,7 @@ class EchoClient:
             data: String or bytes to send
         """
         if isinstance(data, str):
-            data = data.encode('utf-8')
+            data = data.encode("utf-8")
         self.socket.sendall(data)
         print(f"Sent: {data}")
 
@@ -90,7 +90,7 @@ def main():
         assert response == b"Testing echo..."
 
         # Send binary data
-        binary_data = b'\x00\x01\x02\x03\x04'
+        binary_data = b"\x00\x01\x02\x03\x04"
         response = client.send_and_receive(binary_data)
         assert response == binary_data
 
