@@ -251,8 +251,14 @@ async def handle_client(reader, writer):
 
             # Drain the writer after processing all messages
             await writer.drain()
+    except asyncio.CancelledError:
+        # Task cancellations are expected during shutdown; surface them explicitly for debugging
+        print(f"Connection task for {client_address} cancelled")
+        raise
     except Exception as e:
-        print(f"Error handling client {client_address}: {e}")
+        print(
+            f"Error handling client {client_address}: {type(e).__name__}: {e!r}"
+        )
     finally:
         writer.close()
         await writer.wait_closed()
