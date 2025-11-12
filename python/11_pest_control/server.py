@@ -61,11 +61,11 @@ def process_message(message: bytes, writer, state):
         # process hello
         res = parse_hello_message(message)
         print(f"process_message: hello parsed {res}")
+        writer.write(hello_message("pestcontrol", 1))
         if res["protocol"] != "pestcontrol" or res["version"] != 1:
             print("process_message: hello protocol/version mismatch")
             writer.write(error_message("Invalid hello"))
             return
-        writer.write(hello_message("pestcontrol", 1))
 
         state["hello"] = True
         return
