@@ -104,17 +104,17 @@ def process_message(message: bytes, writer, state):
         # 2. send Hello and receive Hello
         # TODO: remember to handle exceptions properly by sending the error message on exception
         authority_server_client.send(hello_message("pestcontrol", 1))
-        hello_message = authority_server_client.receive()
+        authority_hello_message = authority_server_client.receive()
         print(
             "process_message: authority hello "
-            f"type={hello_message[:1].hex()} len={len(hello_message)}"
+            f"type={authority_hello_message[:1].hex()} len={len(authority_hello_message)}"
         )
-        if not validate_checksum(hello_message):
+        if not validate_checksum(authority_hello_message):
             authority_server_client.send(
                 error_message("Bad checksum for authority server hello")
             )
             return
-        authority_server_res = parse_hello_message(hello_message)
+        authority_server_res = parse_hello_message(authority_hello_message)
         if (
             authority_server_res["protocol"] != "pestcontrol"
             or authority_server_res["version"] != 1
