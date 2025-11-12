@@ -46,10 +46,14 @@ def validate_checksum(message: bytes) -> bool:
 
 
 def process_message(message: bytes, writer, state):
+    print(
+        f"process_message: len={len(message)} type={message[:1].hex()} state={state}"
+    )
     # 1. check that the checksum is valid
     # if checksum is invalid, then send back error
 
     if not validate_checksum(message):
+        print("process_message: checksum invalid")
         writer.write(error_message("Checksum failed"))
         return
 
@@ -58,7 +62,9 @@ def process_message(message: bytes, writer, state):
     if message[0] == b"\x50":
         # process hello
         res = parse_hello_message(message)
+        print(f"process_message: hello parsed {res}")
         if res["protocol"] != "pestcontrol" or res["version"] != 1:
+            print("process_message: hello protocol/version mismatch")
             writer.write(error_message("Invalid hello"))
             return
         writer.write(hello_message("pestcontrol", 1))
@@ -67,11 +73,13 @@ def process_message(message: bytes, writer, state):
         return
 
     if state["hello"] == False:
+        print("process_message: received non-hello before hello")
         writer.write(error_message("Missing hello as first message"))
         return
 
     if message[0] == b"\x58":
         res = parse_site_visit_message(message)
+        print(f"process_message: site visit parsed {res}")
 
         site = res["site"]
         populations = res["populations"]
@@ -91,6 +99,7 @@ def process_message(message: bytes, writer, state):
             return
 
         # 1. create a new AuthorityServerClient client
+        print(f"process_message: connecting to authority for site {site}")
         authority_server_client = AuthorityServerClient()
         authority_server_client.connect()
 
@@ -98,6 +107,10 @@ def process_message(message: bytes, writer, state):
         # TODO: remember to handle exceptions properly by sending the error message on exception
         authority_server_client.send(hello_message("pestcontrol", 1))
         hello_message = authority_server_client.receive()
+        print(
+            "process_message: authority hello "
+            f"type={hello_message[:1].hex()} len={len(hello_message)}"
+        )
         if not validate_checksum(hello_message):
             authority_server_client.send(
                 error_message("Bad checksum for authority server hello")
@@ -114,6 +127,10 @@ def process_message(message: bytes, writer, state):
         # 3. send DialAuthority and receive TargetPopulations
         authority_server_client.send(dial_authority_message(site))
         target_populations_message = authority_server_client.receive()
+        print(
+            "process_message: authority target populations "
+            f"type={target_populations_message[:1].hex()} len={len(target_populations_message)}"
+        )
         if not validate_checksum(target_populations_message):
             authority_server_client.send(
                 error_message("Bad checksum for authority server target populations")
