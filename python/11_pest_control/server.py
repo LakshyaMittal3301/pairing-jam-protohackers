@@ -96,6 +96,9 @@ def process_message(message: bytes, writer, state):
             )
             return
 
+        if site not in all_policies:
+            all_policies[site] = {}
+
         # 1. create a new AuthorityServerClient client
         print(f"process_message: connecting to authority for site {site}")
         authority_server_client = AuthorityServerClient()
