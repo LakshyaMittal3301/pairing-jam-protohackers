@@ -235,11 +235,10 @@ async def handle_client(reader, writer):
 
             data_buffer += data
 
-            if len(data_buffer) < 5:
-                continue
-
             # process all messages in data_buffer
             while True:
+                if len(data_buffer) < 5:
+                    break
                 message_len = parse_u32(data_buffer, 1)
                 if len(data_buffer) < message_len:
                     break
@@ -256,9 +255,7 @@ async def handle_client(reader, writer):
         print(f"Connection task for {client_address} cancelled")
         raise
     except Exception as e:
-        print(
-            f"Error handling client {client_address}: {type(e).__name__}: {e!r}"
-        )
+        print(f"Error handling client {client_address}: {type(e).__name__}: {e!r}")
     finally:
         writer.close()
         await writer.wait_closed()
