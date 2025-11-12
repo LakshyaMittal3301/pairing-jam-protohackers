@@ -231,7 +231,7 @@ async def handle_client(reader, writer):
                 print(f"Client {client_address} disconnected")
                 break
 
-            print(f"Received from {client_address}: {data}")
+            print(f"Received from {client_address}: {data:02x}")
 
             data_buffer += data
 
