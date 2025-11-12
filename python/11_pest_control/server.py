@@ -57,8 +57,7 @@ def process_message(message: bytes, writer, state):
 
     # 2. parse the message type
 
-    print(f"{message[0]=} {b'\x50'=}")
-    if message[0] == b"\x50":
+    if message[:1] == b"\x50":
         # process hello
         res = parse_hello_message(message)
         print(f"process_message: hello parsed {res}")
@@ -76,7 +75,7 @@ def process_message(message: bytes, writer, state):
         writer.write(error_message("Missing hello as first message"))
         return
 
-    if message[0] == b"\x58":
+    if message[:1] == b"\x58":
         res = parse_site_visit_message(message)
         print(f"process_message: site visit parsed {res}")
 
