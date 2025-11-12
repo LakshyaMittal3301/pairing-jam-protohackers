@@ -145,7 +145,7 @@ def process_message(message: bytes, writer, state):
             min_count = target_population["min"]
             max_count = target_population["max"]
 
-            cur_count = populations.get(species, 0)
+            cur_count = species_count.get(species, 0)
             if cur_count < min_count:
                 # delete policy if there's an existing policy and it's cull
                 if (
