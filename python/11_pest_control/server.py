@@ -46,9 +46,7 @@ def validate_checksum(message: bytes) -> bool:
 
 
 def process_message(message: bytes, writer, state):
-    print(
-        f"process_message: len={len(message)} type={message[:1].hex()} state={state}"
-    )
+    print(f"process_message: len={len(message)} type={message[:1].hex()} state={state}")
     # 1. check that the checksum is valid
     # if checksum is invalid, then send back error
 
@@ -59,6 +57,7 @@ def process_message(message: bytes, writer, state):
 
     # 2. parse the message type
 
+    print(f"{message[0]=} {b'\x50'=}")
     if message[0] == b"\x50":
         # process hello
         res = parse_hello_message(message)
