@@ -1,5 +1,7 @@
 import socket
 
+from messages import parse_u32
+
 HOST = "pestcontrol.protohackers.com"  # Server hostname or IP address
 PORT = 20547  # Server port
 
@@ -12,6 +14,7 @@ class AuthorityServerClient:
         self.host = host
         self.port = port
         self.socket = None
+        self.data_buffer = b""
 
     def connect(self):
         """Connect to the server."""
@@ -30,7 +33,7 @@ class AuthorityServerClient:
         self.socket.sendall(data)
         print(f"Sent: {data}")
 
-    def receive(self, buffer_size=4096):
+    def receive(self):
         """Receive data from the server.
 
         Args:
@@ -39,9 +42,24 @@ class AuthorityServerClient:
         Returns:
             Received data as bytes
         """
-        data = self.socket.recv(buffer_size)
-        print(f"Received: {data}")
-        return data
+        while True:
+            if len(self.data_buffer) < 5:
+                data = self.socket.recv(4096)
+                self.data_buffer += data
+                print(f"Received: {data}")
+                continue
+
+            message_len = parse_u32(self.data_buffer, 1)
+
+            if len(self.data_buffer) < message_len:
+                data = self.socket.recv(4096)
+                self.data_buffer += data
+                print(f"Received: {data}")
+                continue
+
+            message = self.data_buffer[:message_len]
+            self.data_buffer = self.data_buffer[message_len:]
+            return message
 
     def close(self):
         """Close the connection."""
