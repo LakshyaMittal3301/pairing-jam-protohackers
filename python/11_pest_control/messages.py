@@ -1,5 +1,5 @@
 def encode_u32(n: int) -> bytes:
-    assert n >= 0 and n <= (2**32 - 1)
+    assert 0 <= n <= (2**32 - 1), f"u32 out of range: {n}"
     return bytes([(n >> 24) % 256, (n >> 16) % 256, (n >> 8) % 256, n % 256])
 
 
@@ -8,7 +8,7 @@ def encode_str(s: str) -> bytes:
 
 
 def message_wrapper(message_type: bytes, contents: bytes) -> bytes:
-    assert len(message_type) == 1
+    assert len(message_type) == 1, f"message_type must be 1 byte, got {len(message_type)}"
     message_len = len(contents) + 1 + 4 + 1
     message = message_type + encode_u32(message_len) + contents
     checksum = 0
@@ -31,8 +31,8 @@ def dial_authority_message(site: int) -> bytes:
 
 
 def create_policy_message(species: str, action: bytes) -> bytes:
-    assert len(action) == 1
-    assert action == b"\x90" or action == b"\xa0"
+    assert len(action) == 1, f"action must be 1 byte, got {len(action)}"
+    assert action in (b"\x90", b"\xa0"), f"action must be 0x90 or 0xA0, got {action!r}"
     return message_wrapper(b"\x55", encode_str(species) + action)
 
 
@@ -42,13 +42,15 @@ def delete_policy_message(policy: int) -> bytes:
 
 def parse_u32(b: bytes, index: int) -> int:
     # convert 4 byte unsigned integer (u32) to the integer type
-    assert len(b) >= index + 4
+    assert len(b) >= index + 4, f"buffer too small for u32 at index {index}: len={len(b)}"
     return (b[index] << 24) + (b[index + 1] << 16) + (b[index + 2] << 8) + b[index + 3]
 
 
 def parse_str(b: bytes, index: int) -> str:
     str_len = parse_u32(b, index)
-    assert len(b) >= index + 4 + str_len
+    assert (
+        len(b) >= index + 4 + str_len
+    ), f"buffer too small for string len {str_len} at index {index}: len={len(b)}"
     return b[index + 4 : index + 4 + str_len].decode("utf-8")
 
 
