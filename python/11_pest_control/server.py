@@ -280,7 +280,7 @@ async def handle_client(reader, writer):
             while True:
                 if len(data_buffer) < 5:
                     break
-                message_len = parse_u32(data_buffer, 1)
+                message_len, _ = parse_u32(data_buffer, 1)
                 if message_len > 1000000:
                     if not state["server_hello"]:
                         writer.write(hello_message("pestcontrol", 1))

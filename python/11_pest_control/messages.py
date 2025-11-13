@@ -43,27 +43,28 @@ def delete_policy_message(policy: int) -> bytes:
     return message_wrapper(b"\x56", encode_u32(policy))
 
 
-def parse_u32(b: bytes, index: int) -> int:
+def parse_u32(b: bytes, index: int) -> tuple[int, int]:
     # convert 4 byte unsigned integer (u32) to the integer type
     assert len(b) >= index + 4, (
         f"buffer too small for u32 at index {index}: len={len(b)}"
     )
-    return (b[index] << 24) + (b[index + 1] << 16) + (b[index + 2] << 8) + b[index + 3]
+    return (b[index] << 24) + (b[index + 1] << 16) + (b[index + 2] << 8) + b[
+        index + 3
+    ], index + 4
 
 
-def parse_str(b: bytes, index: int) -> str:
-    str_len = parse_u32(b, index)
-    assert len(b) >= index + 4 + str_len, (
+def parse_str(b: bytes, index: int) -> tuple[str, int]:
+    str_len, index = parse_u32(b, index)
+    assert len(b) >= index + str_len, (
         f"buffer too small for string len {str_len} at index {index}: len={len(b)}"
     )
-    return b[index + 4 : index + 4 + str_len].decode("utf-8")
+    return b[index : index + str_len].decode("utf-8"), index + str_len
 
 
 def parse_array(
     b: bytes, index: int, spec: dict[str, str]
-) -> list[dict[str, int | str]]:
-    arr_len = parse_u32(b, index)
-    index += 4
+) -> tuple[list[dict[str, int | str]], int]:
+    arr_len, index = parse_u32(b, index)
     arr = []
     for _ in range(arr_len):
         # parse element
@@ -71,58 +72,59 @@ def parse_array(
         for key, value in spec.items():
             if value == "u32":
                 # parse u32
-                int_val = parse_u32(b, index)
-                index += 4
+                int_val, index = parse_u32(b, index)
                 elem[key] = int_val
             elif value == "str":
                 # parse str
-                str_val = parse_str(b, index)
-                index += 4 + len(str_val)
+                str_val, index = parse_str(b, index)
                 elem[key] = str_val
             else:
                 raise Exception(f"Unknown spec type {value}")
         arr.append(elem)
-    return arr
+    return arr, index
 
 
 def parse_hello_message(b: bytes) -> dict[str, str | int]:
     index = 5
-    protocol = parse_str(b, index)
-    index += 4 + len(protocol)
-    version = parse_u32(b, index)
-    index += 4
+    protocol, index = parse_str(b, index)
+    version, index = parse_u32(b, index)
+    assert index + 1 == len(b)
     return {"protocol": protocol, "version": version}
 
 
 def parse_error_message(b: bytes) -> dict[str, str]:
     index = 5
-    message = parse_str(b, index)
-    index += 4 + len(message)
+    message, index = parse_str(b, index)
+    assert index + 1 == len(b)
     return {"message": message}
 
 
 def parse_ok_message(b: bytes) -> dict:
+    index = 5
+    assert index + 1 == len(b)
     return {}
 
 
 def parse_target_populations_message(b: bytes):
     index = 5
-    site = parse_u32(b, index)
-    index += 4
-    populations = parse_array(b, index, {"species": "str", "min": "u32", "max": "u32"})
+    site, index = parse_u32(b, index)
+    populations, index = parse_array(
+        b, index, {"species": "str", "min": "u32", "max": "u32"}
+    )
+    assert index + 1 == len(b)
     return {"site": site, "populations": populations}
 
 
 def parse_policy_result_message(b: bytes):
     index = 5
-    policy = parse_u32(b, index)
-    index += 4
+    policy, index = parse_u32(b, index)
+    assert index + 1 == len(b)
     return {"policy": policy}
 
 
 def parse_site_visit_message(b: bytes):
     index = 5
-    site = parse_u32(b, index)
-    index += 4
-    populations = parse_array(b, index, {"species": "str", "count": "u32"})
+    site, index = parse_u32(b, index)
+    populations, index = parse_array(b, index, {"species": "str", "count": "u32"})
+    assert index + 1 == len(b)
     return {"site": site, "populations": populations}

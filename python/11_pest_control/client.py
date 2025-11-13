@@ -49,7 +49,7 @@ class AuthorityServerClient:
                 print(f"Received: {data}")
                 continue
 
-            message_len = parse_u32(self.data_buffer, 1)
+            message_len, _ = parse_u32(self.data_buffer, 1)
 
             if len(self.data_buffer) < message_len:
                 data = self.socket.recv(4096)
