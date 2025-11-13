@@ -285,10 +285,8 @@ async def handle_client(reader, writer):
                     if not state["server_hello"]:
                         writer.write(hello_message("pestcontrol", 1))
                         state["server_hello"] = True
-                        await writer.drain()
                     writer.write(error_message("Message too long"))
-                    await writer.drain()
-                    assert False
+                    break
                 if len(data_buffer) < message_len:
                     break
                 current_message = data_buffer[:message_len]
