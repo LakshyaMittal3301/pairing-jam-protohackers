@@ -50,186 +50,204 @@ def process_message(message: bytes, writer, state):
     # 1. check that the checksum is valid
     # if checksum is invalid, then send back error
 
-    if not validate_checksum(message):
-        print("process_message: checksum invalid")
-        writer.write(error_message("Checksum failed"))
-        return
-
-    # 2. parse the message type
-
-    if message[:1] == b"\x50":
-        # process hello
-        res = parse_hello_message(message)
-        print(f"process_message: hello parsed {res}")
-        writer.write(hello_message("pestcontrol", 1))
-        if res["protocol"] != "pestcontrol" or res["version"] != 1:
-            print("process_message: hello protocol/version mismatch")
-            writer.write(error_message("Invalid hello"))
+    try:
+        if not validate_checksum(message):
+            print("process_message: checksum invalid")
+            writer.write(error_message("Checksum failed"))
             return
 
-        state["hello"] = True
-        return
+        # 2. parse the message type
 
-    if state["hello"] == False:
-        print("process_message: received non-hello before hello")
-        writer.write(error_message("Missing hello as first message"))
-        return
+        if message[:1] == b"\x50":
+            # process hello
+            res = parse_hello_message(message)
+            print(f"process_message: hello parsed {res}")
+            writer.write(hello_message("pestcontrol", 1))
+            if res["protocol"] != "pestcontrol" or res["version"] != 1:
+                print("process_message: hello protocol/version mismatch")
+                writer.write(error_message("Invalid hello"))
+                return
 
-    if message[:1] == b"\x58":
-        res = parse_site_visit_message(message)
-        print(f"process_message: site visit parsed {res}")
-
-        site = res["site"]
-        populations = res["populations"]
-        species_count = {}
-        bad = False
-        for entry in populations:
-            if entry["species"] not in species_count:
-                species_count[entry["species"]] = entry["count"]
-            elif species_count[entry["species"]] == entry["count"]:
-                pass
-            else:
-                bad = True
-        if bad:
-            writer.write(
-                error_message("Multiple conflicting counts for the same species")
-            )
+            state["hello"] = True
             return
 
-        if site not in all_policies:
-            all_policies[site] = {}
-
-        # 1. create a new AuthorityServerClient client
-        print(f"process_message: connecting to authority for site {site}")
-        authority_server_client = AuthorityServerClient()
-        authority_server_client.connect()
-
-        # 2. send Hello and receive Hello
-        # TODO: remember to handle exceptions properly by sending the error message on exception
-        authority_server_client.send(hello_message("pestcontrol", 1))
-        authority_hello_message = authority_server_client.receive()
-        print(
-            "process_message: authority hello "
-            f"type={authority_hello_message[:1].hex()} len={len(authority_hello_message)}"
-        )
-        if not validate_checksum(authority_hello_message):
-            authority_server_client.send(
-                error_message("Bad checksum for authority server hello")
-            )
-            return
-        authority_server_res = parse_hello_message(authority_hello_message)
-        if (
-            authority_server_res["protocol"] != "pestcontrol"
-            or authority_server_res["version"] != 1
-        ):
-            authority_server_client.send(error_message("Invalid hello"))
+        if state["hello"] == False:
+            print("process_message: received non-hello before hello")
+            writer.write(error_message("Missing hello as first message"))
             return
 
-        # 3. send DialAuthority and receive TargetPopulations
-        authority_server_client.send(dial_authority_message(site))
-        target_populations_message = authority_server_client.receive()
-        print(
-            "process_message: authority target populations "
-            f"type={target_populations_message[:1].hex()} len={len(target_populations_message)}"
-        )
-        if not validate_checksum(target_populations_message):
-            authority_server_client.send(
-                error_message("Bad checksum for authority server target populations")
-            )
-            return
-        authority_server_res = parse_target_populations_message(
-            target_populations_message
-        )
-        target_populations = authority_server_res["populations"]
+        if message[:1] == b"\x58":
+            res = parse_site_visit_message(message)
+            print(f"process_message: site visit parsed {res}")
 
-        # 4. iterate over populations and update policies
-        for target_population in target_populations:
-            species = target_population["species"]
-            min_count = target_population["min"]
-            max_count = target_population["max"]
+            site = res["site"]
+            populations = res["populations"]
+            species_count = {}
+            bad = False
+            for entry in populations:
+                if entry["species"] not in species_count:
+                    species_count[entry["species"]] = entry["count"]
+                elif species_count[entry["species"]] == entry["count"]:
+                    pass
+                else:
+                    bad = True
+            if bad:
+                writer.write(
+                    error_message("Multiple conflicting counts for the same species")
+                )
+                return
 
-            cur_count = species_count.get(species, 0)
-            if cur_count < min_count:
-                # delete policy if there's an existing policy and it's cull
+            if site not in all_policies:
+                all_policies[site] = {}
+
+            # 1. create a new AuthorityServerClient client
+            print(f"process_message: connecting to authority for site {site}")
+            authority_server_client = AuthorityServerClient()
+            authority_server_client.connect()
+
+            try:
+                # 2. send Hello and receive Hello
+                # TODO: remember to handle exceptions properly by sending the error message on exception
+                authority_server_client.send(hello_message("pestcontrol", 1))
+                authority_hello_message = authority_server_client.receive()
+                print(
+                    "process_message: authority hello "
+                    f"type={authority_hello_message[:1].hex()} len={len(authority_hello_message)}"
+                )
+                if not validate_checksum(authority_hello_message):
+                    authority_server_client.send(
+                        error_message("Bad checksum for authority server hello")
+                    )
+                    return
+                authority_server_res = parse_hello_message(authority_hello_message)
                 if (
-                    species in all_policies[site]
-                    and all_policies[site][species][1] == "cull"
+                    authority_server_res["protocol"] != "pestcontrol"
+                    or authority_server_res["version"] != 1
                 ):
-                    # remove policy
+                    authority_server_client.send(error_message("Invalid hello"))
+                    return
+
+                # 3. send DialAuthority and receive TargetPopulations
+                authority_server_client.send(dial_authority_message(site))
+                target_populations_message = authority_server_client.receive()
+                print(
+                    "process_message: authority target populations "
+                    f"type={target_populations_message[:1].hex()} len={len(target_populations_message)}"
+                )
+                if not validate_checksum(target_populations_message):
                     authority_server_client.send(
-                        delete_policy_message(all_policies[site][species][0])
-                    )
-                    ok_message = authority_server_client.receive()
-                    if not validate_checksum(ok_message):
-                        authority_server_client.send(
-                            error_message("Bad checksum for authority server ok")
+                        error_message(
+                            "Bad checksum for authority server target populations"
                         )
-                        return
-                    del all_policies[site][species]
-
-                # add policy if there's no existing conserve policy
-                if species not in all_policies[site]:
-                    # add policy
-                    authority_server_client.send(
-                        create_policy_message(species, b"\xa0")
                     )
-                    policy_result_message = authority_server_client.receive()
-                    if not validate_checksum(policy_result_message):
-                        authority_server_client.send(error_message("Bad checksum"))
-                        return
-                    policy_id = parse_policy_result_message(policy_result_message)[
-                        "policy"
-                    ]
+                    return
+                authority_server_res = parse_target_populations_message(
+                    target_populations_message
+                )
+                target_populations = authority_server_res["populations"]
 
-                    all_policies[site][species] = (policy_id, "conserve")
-            elif cur_count > max_count:
-                # delete policy if there's an existing policy and it's conserve
-                if (
-                    species in all_policies[site]
-                    and all_policies[site][species][1] == "conserve"
-                ):
-                    # remove policy
-                    authority_server_client.send(
-                        delete_policy_message(all_policies[site][species][0])
-                    )
-                    ok_message = authority_server_client.receive()
-                    if not validate_checksum(ok_message):
-                        authority_server_client.send(
-                            error_message("Bad checksum for authority server ok")
-                        )
-                        return
-                    del all_policies[site][species]
+                # 4. iterate over populations and update policies
+                for target_population in target_populations:
+                    species = target_population["species"]
+                    min_count = target_population["min"]
+                    max_count = target_population["max"]
 
-                # add policy if there's no existing cull policy
-                if species not in all_policies[site]:
-                    # add policy
-                    authority_server_client.send(
-                        create_policy_message(species, b"\x90")
-                    )
-                    policy_result_message = authority_server_client.receive()
-                    if not validate_checksum(policy_result_message):
-                        authority_server_client.send(error_message("Bad checksum"))
-                        return
-                    policy_id = parse_policy_result_message(policy_result_message)[
-                        "policy"
-                    ]
+                    cur_count = species_count.get(species, 0)
+                    if cur_count < min_count:
+                        # delete policy if there's an existing policy and it's cull
+                        if (
+                            species in all_policies[site]
+                            and all_policies[site][species][1] == "cull"
+                        ):
+                            # remove policy
+                            authority_server_client.send(
+                                delete_policy_message(all_policies[site][species][0])
+                            )
+                            ok_message = authority_server_client.receive()
+                            if not validate_checksum(ok_message):
+                                authority_server_client.send(
+                                    error_message(
+                                        "Bad checksum for authority server ok"
+                                    )
+                                )
+                                return
+                            del all_policies[site][species]
 
-                    all_policies[site][species] = (policy_id, "cull")
-            else:
-                if species in all_policies[site]:
-                    # remove policy
-                    authority_server_client.send(
-                        delete_policy_message(all_policies[site][species][0])
-                    )
-                    ok_message = authority_server_client.receive()
-                    if not validate_checksum(ok_message):
-                        authority_server_client.send(
-                            error_message("Bad checksum for authority server ok")
-                        )
-                        return
-                    del all_policies[site][species]
+                        # add policy if there's no existing conserve policy
+                        if species not in all_policies[site]:
+                            # add policy
+                            authority_server_client.send(
+                                create_policy_message(species, b"\xa0")
+                            )
+                            policy_result_message = authority_server_client.receive()
+                            if not validate_checksum(policy_result_message):
+                                authority_server_client.send(
+                                    error_message("Bad checksum")
+                                )
+                                return
+                            policy_id = parse_policy_result_message(
+                                policy_result_message
+                            )["policy"]
 
-        authority_server_client.close()
+                            all_policies[site][species] = (policy_id, "conserve")
+                    elif cur_count > max_count:
+                        # delete policy if there's an existing policy and it's conserve
+                        if (
+                            species in all_policies[site]
+                            and all_policies[site][species][1] == "conserve"
+                        ):
+                            # remove policy
+                            authority_server_client.send(
+                                delete_policy_message(all_policies[site][species][0])
+                            )
+                            ok_message = authority_server_client.receive()
+                            if not validate_checksum(ok_message):
+                                authority_server_client.send(
+                                    error_message(
+                                        "Bad checksum for authority server ok"
+                                    )
+                                )
+                                return
+                            del all_policies[site][species]
+
+                        # add policy if there's no existing cull policy
+                        if species not in all_policies[site]:
+                            # add policy
+                            authority_server_client.send(
+                                create_policy_message(species, b"\x90")
+                            )
+                            policy_result_message = authority_server_client.receive()
+                            if not validate_checksum(policy_result_message):
+                                authority_server_client.send(
+                                    error_message("Bad checksum")
+                                )
+                                return
+                            policy_id = parse_policy_result_message(
+                                policy_result_message
+                            )["policy"]
+
+                            all_policies[site][species] = (policy_id, "cull")
+                    else:
+                        if species in all_policies[site]:
+                            # remove policy
+                            authority_server_client.send(
+                                delete_policy_message(all_policies[site][species][0])
+                            )
+                            ok_message = authority_server_client.receive()
+                            if not validate_checksum(ok_message):
+                                authority_server_client.send(
+                                    error_message(
+                                        "Bad checksum for authority server ok"
+                                    )
+                                )
+                                return
+                            del all_policies[site][species]
+            except Exception as e:
+                authority_server_client.send(error_message("Exception occurred"))
+
+            authority_server_client.close()
+    except Exception as e:
+        writer.write(error_message("Exception occurred"))
 
 
 async def handle_client(reader, writer):
