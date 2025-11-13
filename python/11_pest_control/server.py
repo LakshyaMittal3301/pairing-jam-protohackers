@@ -303,8 +303,10 @@ async def handle_client(reader, writer):
     except Exception as e:
         print(f"Error handling client {client_address}: {type(e).__name__}: {e!r}")
     finally:
+        print("Closing writer...")
         writer.close()
         await writer.wait_closed()
+        print("Writer closed")
 
 
 if __name__ == "__main__":
