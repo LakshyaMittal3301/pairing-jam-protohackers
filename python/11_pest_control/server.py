@@ -263,7 +263,9 @@ async def handle_client(reader, writer):
     try:
         while True:
             # Receive data from the client (up to 4096 bytes)
+            print(f"reading data for {client_address} ...")
             data = await reader.read(4096)
+            print(f"finished reading data for {client_address}")
 
             # If no data received, client has closed the connection
             if not data:
