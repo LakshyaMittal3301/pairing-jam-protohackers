@@ -8,7 +8,9 @@ def encode_str(s: str) -> bytes:
 
 
 def message_wrapper(message_type: bytes, contents: bytes) -> bytes:
-    assert len(message_type) == 1, f"message_type must be 1 byte, got {len(message_type)}"
+    assert len(message_type) == 1, (
+        f"message_type must be 1 byte, got {len(message_type)}"
+    )
     message_len = len(contents) + 1 + 4 + 1
     message = message_type + encode_u32(message_len) + contents
     checksum = 0
@@ -23,6 +25,7 @@ def hello_message(protocol: str, version: int) -> bytes:
 
 
 def error_message(message: str) -> bytes:
+    print(f"{message=}")
     return message_wrapper(b"\x51", encode_str(message))
 
 
@@ -42,15 +45,17 @@ def delete_policy_message(policy: int) -> bytes:
 
 def parse_u32(b: bytes, index: int) -> int:
     # convert 4 byte unsigned integer (u32) to the integer type
-    assert len(b) >= index + 4, f"buffer too small for u32 at index {index}: len={len(b)}"
+    assert len(b) >= index + 4, (
+        f"buffer too small for u32 at index {index}: len={len(b)}"
+    )
     return (b[index] << 24) + (b[index + 1] << 16) + (b[index + 2] << 8) + b[index + 3]
 
 
 def parse_str(b: bytes, index: int) -> str:
     str_len = parse_u32(b, index)
-    assert (
-        len(b) >= index + 4 + str_len
-    ), f"buffer too small for string len {str_len} at index {index}: len={len(b)}"
+    assert len(b) >= index + 4 + str_len, (
+        f"buffer too small for string len {str_len} at index {index}: len={len(b)}"
+    )
     return b[index + 4 : index + 4 + str_len].decode("utf-8")
 
 
