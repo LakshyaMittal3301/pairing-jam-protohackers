@@ -282,9 +282,9 @@ async def handle_client(reader, writer):
                     break
                 message_len = parse_u32(data_buffer, 1)
                 if message_len > 1000000:
-                    if not state["server_hello"]:
-                        writer.write(hello_message("pestcontrol", 1))
-                        state["server_hello"] = True
+                    # if not state["server_hello"]:
+                    #     writer.write(hello_message("pestcontrol", 1))
+                    #     state["server_hello"] = True
                     writer.write(error_message("Message too long"))
                     await writer.drain()
                     assert False
@@ -305,10 +305,10 @@ async def handle_client(reader, writer):
     except Exception as e:
         print(f"Error handling client {client_address}: {type(e).__name__}: {e!r}")
     finally:
-        print("Closing writer...")
+        print(f"Closing writer for {client_address}...")
         writer.close()
         await writer.wait_closed()
-        print("Writer closed")
+        print(f"Writer closed for {client_address}")
 
 
 if __name__ == "__main__":
