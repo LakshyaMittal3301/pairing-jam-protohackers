@@ -279,6 +279,11 @@ async def handle_client(reader, writer):
                 if len(data_buffer) < 5:
                     break
                 message_len = parse_u32(data_buffer, 1)
+                if message_len > 1000000:
+                    if not state["server_hello"]:
+                        writer.write(hello_message("pestcontrol", 1))
+                        state["server_hello"] = True
+                    writer.write(error_message("Message too long"))
                 if len(data_buffer) < message_len:
                     break
                 current_message = data_buffer[:message_len]
