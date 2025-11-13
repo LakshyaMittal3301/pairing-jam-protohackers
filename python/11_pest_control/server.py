@@ -51,6 +51,10 @@ def process_message(message: bytes, writer, state):
     # if checksum is invalid, then send back error
 
     try:
+        if not state["server_hello"]:
+            writer.write(hello_message("pestcontrol", 1))
+            state["server_hello"] = True
+
         if not validate_checksum(message):
             print("process_message: checksum invalid")
             writer.write(error_message("Checksum failed"))
@@ -62,16 +66,14 @@ def process_message(message: bytes, writer, state):
             # process hello
             res = parse_hello_message(message)
             print(f"process_message: hello parsed {res}")
-            writer.write(hello_message("pestcontrol", 1))
             if res["protocol"] != "pestcontrol" or res["version"] != 1:
                 print("process_message: hello protocol/version mismatch")
                 writer.write(error_message("Invalid hello"))
                 return
-
-            state["hello"] = True
+            state["client_hello"] = True
             return
 
-        if state["hello"] == False:
+        if not state["client_hello"]:
             print("process_message: received non-hello before hello")
             writer.write(error_message("Missing hello as first message"))
             return
@@ -256,7 +258,8 @@ async def handle_client(reader, writer):
     print(f"Connection from {client_address}")
 
     data_buffer = b""
-    state = {"hello": False}
+    # state is a client specific
+    state = {"client_hello": False, "server_hello": False}
     try:
         while True:
             # Receive data from the client (up to 4096 bytes)
